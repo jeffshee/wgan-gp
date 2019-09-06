@@ -53,7 +53,7 @@ def get_lsun_dataloader(path_to_data='../lsun', dataset='bedroom_train',
     ])
 
     # Get dataset
-    lsun_dset = datasets.LSUN(db_path=path_to_data, classes=[dataset],
+    lsun_dset = datasets.LSUN(path_to_data, classes=[dataset],
                               transform=transform)
 
     # Create dataloader

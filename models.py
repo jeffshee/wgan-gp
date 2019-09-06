@@ -1,7 +1,5 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from torch.autograd import Variable
 
 
 class Generator(nn.Module):
@@ -11,7 +9,7 @@ class Generator(nn.Module):
         self.dim = dim
         self.latent_dim = latent_dim
         self.img_size = img_size
-        self.feature_sizes = (self.img_size[0] / 16, self.img_size[1] / 16)
+        self.feature_sizes = (int(self.img_size[0] / 16), int(self.img_size[1] / 16))
 
         self.latent_to_features = nn.Sequential(
             nn.Linear(latent_dim, 8 * dim * self.feature_sizes[0] * self.feature_sizes[1]),
@@ -69,7 +67,7 @@ class Discriminator(nn.Module):
 
         # 4 convolutions of stride 2, i.e. halving of size everytime
         # So output size will be 8 * (img_size / 2 ^ 4) * (img_size / 2 ^ 4)
-        output_size = 8 * dim * (img_size[0] / 16) * (img_size[1] / 16)
+        output_size = int(8 * dim * (img_size[0] / 16) * (img_size[1] / 16))
         self.features_to_prob = nn.Sequential(
             nn.Linear(output_size, 1),
             nn.Sigmoid()
