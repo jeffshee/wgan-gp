@@ -133,7 +133,7 @@ class Trainer:
 
             if save_training_gif:
                 # Generate batch of images and convert to grid
-                img_grid = make_grid(self.G(fixed_latents).cpu().data)
+                img_grid = make_grid(self.G(fixed_latents).cpu().data, normalize=True)
                 # Convert to numpy and transpose axes to fit imageio convention
                 # i.e. (width, height, channels)
                 img_grid = (np.transpose(img_grid.numpy(), (1, 2, 0)) * 255).astype(np.uint8)
