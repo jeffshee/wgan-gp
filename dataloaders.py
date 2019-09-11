@@ -58,3 +58,20 @@ def get_lsun_dataloader(path_to_data='../lsun', dataset='bedroom_train',
 
     # Create dataloader
     return DataLoader(lsun_dset, batch_size=batch_size, shuffle=True)
+
+
+def get_img_folder_dataloader(path_to_data, image_size=128, batch_size=128, normalize=True):
+    if normalize:
+        dset = datasets.ImageFolder(root=path_to_data, transform=transforms.Compose([
+            transforms.Resize(image_size),
+            transforms.CenterCrop(image_size),
+            transforms.ToTensor(),
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+        ]))
+    else:
+        dset = datasets.ImageFolder(root=path_to_data, transform=transforms.Compose([
+            transforms.Resize(image_size),
+            transforms.CenterCrop(image_size),
+            transforms.ToTensor()
+        ]))
+    return DataLoader(dset, batch_size=batch_size, shuffle=True)
