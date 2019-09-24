@@ -1,3 +1,4 @@
+import os
 import torch
 import torch.optim as optim
 from dataloaders import get_mnist_dataloaders, get_lsun_dataloader, get_img_folder_dataloader
@@ -41,7 +42,12 @@ G_optimizer = optim.Adam(generator.parameters(), lr=lr, betas=betas)
 D_optimizer = optim.Adam(discriminator.parameters(), lr=lr, betas=betas)
 
 # Train model
-epochs = 200
+epochs = 1000
 trainer = Trainer(generator, discriminator, G_optimizer, D_optimizer,
                   use_cuda=torch.cuda.is_available())
+
+# Load Model
+trainer.G.load_state_dict(torch.load('./output/finals/gen_final.pth'))
+trainer.D.load_state_dict(torch.load('./output/finals/dis_final.pth'))
+
 trainer.train(data_loader, epochs)

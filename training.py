@@ -35,6 +35,10 @@ class Trainer:
             os.makedirs('./output/saves')
         except OSError:
             pass
+        try:
+            os.makedirs('./output/finals')
+        except OSError:
+            pass
 
     def _critic_train_iteration(self, data):
         """ """
@@ -159,6 +163,8 @@ class Trainer:
         # Save final states
         torch.save(self.G.state_dict(), './output/saves/gen_final.pth')
         torch.save(self.D.state_dict(), './output/saves/dis_final.pth')
+        torch.save(self.G.state_dict(), './output/finals/gen_final.pth')
+        torch.save(self.G.state_dict(), './output/finals/gen_final.pth')
         if save_training_gif:
             imageio.mimwrite('./output/training_{}_epochs.gif'.format(epochs),
                              training_progress_images)
