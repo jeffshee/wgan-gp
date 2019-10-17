@@ -27,7 +27,7 @@ class Generator(nn.Module):
             nn.ReLU(),
             nn.BatchNorm2d(dim),
             nn.ConvTranspose2d(dim, self.img_size[2], 4, 2, 1),
-            nn.Sigmoid()
+            nn.Tanh()
         )
 
     def forward(self, input_data):
@@ -68,21 +68,18 @@ class Discriminator(nn.Module):
         # 4 convolutions of stride 2, i.e. halving of size everytime
         # So output size will be 8 * (img_size / 2 ^ 4) * (img_size / 2 ^ 4)
         output_size = int(8 * dim * (img_size[0] / 16) * (img_size[1] / 16))
-        self.features_to_prob = nn.Sequential(
-            nn.Linear(output_size, 1),
-            nn.Sigmoid()
-        )
+        self.features_to_predict = nn.Linear(output_size, 1)
 
     def forward(self, input_data):
         batch_size = input_data.size()[0]
         x = self.image_to_features(input_data)
         x = x.view(batch_size, -1)
-        return self.features_to_prob(x)
+        return self.features_to_predict(x)
 
 
-class GeneratorTanh(nn.Module):
+class GeneratorSigmoid(nn.Module):
     def __init__(self, img_size, latent_dim, dim):
-        super(GeneratorTanh, self).__init__()
+        super(GeneratorSigmoid, self).__init__()
 
         self.dim = dim
         self.latent_dim = latent_dim
@@ -105,7 +102,7 @@ class GeneratorTanh(nn.Module):
             nn.ReLU(),
             nn.BatchNorm2d(dim),
             nn.ConvTranspose2d(dim, self.img_size[2], 4, 2, 1),
-            nn.Tanh()
+            nn.Sigmoid()
         )
 
     def forward(self, input_data):
@@ -150,13 +147,10 @@ class DiscriminatorInstanceNorm(nn.Module):
         # 4 convolutions of stride 2, i.e. halving of size everytime
         # So output size will be 8 * (img_size / 2 ^ 4) * (img_size / 2 ^ 4)
         output_size = int(8 * dim * (img_size[0] / 16) * (img_size[1] / 16))
-        self.features_to_prob = nn.Sequential(
-            nn.Linear(output_size, 1),
-            nn.Sigmoid()
-        )
+        self.features_to_predict = nn.Linear(output_size, 1)
 
     def forward(self, input_data):
         batch_size = input_data.size()[0]
         x = self.image_to_features(input_data)
         x = x.view(batch_size, -1)
-        return self.features_to_prob(x)
+        return self.features_to_predict(x)

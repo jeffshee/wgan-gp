@@ -1,14 +1,12 @@
 import os
-import imageio
-import numpy as np
 import torch
 from torch.autograd import grad as torch_grad
-from torchvision.utils import make_grid
+from torchvision.utils import make_grid, save_image
 
 
 class Trainer:
     def __init__(self, generator, discriminator, gen_optimizer, dis_optimizer,
-                 gp_weight=10, critic_iterations=5, print_every=50, save_every=10,
+                 gp_weight=10, critic_iterations=5, print_every=50, save_every=10, writer=None,
                  use_cuda=False):
         self.G = generator
         self.G_opt = gen_optimizer
@@ -21,24 +19,24 @@ class Trainer:
         self.critic_iterations = critic_iterations
         self.print_every = print_every
         self.save_every = save_every
+        self.writer = writer
 
         if self.use_cuda:
             self.G.cuda()
             self.D.cuda()
 
-        # Create required folders
-        try:
-            os.makedirs('./output/imgs')
-        except OSError:
-            pass
-        try:
-            os.makedirs('./output/saves')
-        except OSError:
-            pass
-        try:
-            os.makedirs('./output/finals')
-        except OSError:
-            pass
+        """
+        Create output folders
+        imgs -> output images (generated samples etc.)
+        saves -> state of model that saved every 'save_every' epoch
+        finals -> final (end of train) state of model
+        """
+        self.root_out = '../output/'
+        for path in ['imgs', 'saves', 'finals']:
+            try:
+                os.makedirs(self.root_out + path)
+            except OSError:
+                pass
 
     def _critic_train_iteration(self, data):
         """ """
@@ -134,40 +132,41 @@ class Trainer:
                               self.losses['G'][-1] if self.num_steps > self.critic_iterations else 0,
                               self.losses['GP'][-1], self.losses['gradient_norm'][-1]))
 
-    def train(self, data_loader, epochs, save_training_gif=False):
+    def train(self, data_loader, epochs):
         # Fix latents to see how image generation improves during training
         fixed_latents = self.G.sample_latent(64)
         if self.use_cuda:
             fixed_latents = fixed_latents.cuda()
-        training_progress_images = []
+
+        fixed_real = next(iter(data_loader))[0]
+        if self.use_cuda:
+            fixed_real = fixed_real.cuda()
+
+        img = make_grid(fixed_real, normalize=True)
+        save_image(img, self.root_out + 'imgs/fixed_real.png')
+        if self.writer is not None:
+            self.writer.add_image('Real/Sample', img)
 
         for epoch in range(epochs):
             self._train_epoch(data_loader, epoch, epochs)
 
             # Save states
             if (epoch + 1) % self.save_every == 0:
-                torch.save(self.G.state_dict(), './output/saves/gen_epoch_{}.pth'.format(epoch + 1))
-                torch.save(self.D.state_dict(), './output/saves/dis_epoch_{}.pth'.format(epoch + 1))
+                torch.save(self.G.state_dict(), self.root_out + 'saves/gen_epoch_{}.pth'.format(epoch + 1))
+                torch.save(self.D.state_dict(), self.root_out + 'saves/dis_epoch_{}.pth'.format(epoch + 1))
 
             # Generate batch of images and convert to grid
-            img_grid = make_grid(self.G(fixed_latents).cpu().data, normalize=True)
-            # Convert to numpy and transpose axes to fit imageio convention
-            # i.e. (width, height, channels)
-            img_grid = (np.transpose(img_grid.numpy(), (1, 2, 0)) * 255).astype(np.uint8)
-            # Save image grid for each epoch
-            imageio.imwrite('./output/imgs/training_epoch_{}.png'.format(epoch + 1), img_grid)
-            if save_training_gif:
-                # Add image grid to training progress
-                training_progress_images.append(img_grid)
+            img = make_grid(self.G(fixed_latents).cpu().data, normalize=True)
+            save_image(img, self.root_out + 'imgs/training_epoch_{}.png'.format(epoch + 1))
+            if self.writer is not None:
+                self.writer.add_image('Generated/Sample', img, epoch)
 
         # Save final states
-        torch.save(self.G.state_dict(), './output/saves/gen_final.pth')
-        torch.save(self.D.state_dict(), './output/saves/dis_final.pth')
-        torch.save(self.G.state_dict(), './output/finals/gen_final.pth')
-        torch.save(self.G.state_dict(), './output/finals/gen_final.pth')
-        if save_training_gif:
-            imageio.mimwrite('./output/training_{}_epochs.gif'.format(epochs),
-                             training_progress_images)
+        torch.save(self.G.state_dict(), self.root_out + 'finals/gen_final.pth')
+        torch.save(self.G.state_dict(), self.root_out + 'finals/gen_final.pth')
+
+        if self.writer is not None:
+            self.writer.close()
 
     def sample_generator(self, num_samples):
         latent_samples = self.G.sample_latent(num_samples)
